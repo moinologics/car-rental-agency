@@ -1,11 +1,13 @@
 <?php
 
     if(!isset($_REQUEST['op']))
-        exit;
+        die('no op');
     else
         $op = $_REQUEST['op'];
 
     require_once('db.php');
+
+    session_start();
 
     header('Content-Type: application/json');
     http_response_code(200);
@@ -19,20 +21,19 @@
 
         $user_type = ($op == 'CUSTOMER_REGISTRATION') ? 'CUSTOMER' : 'AGENCY';
 
-        $stmt = $db->prepare("SELECT COUNT(*) FROM users WHERE email = ? AND type = ?");
+        $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND type = ?");
         $stmt->execute([$email, $user_type]);      
-        $count = $stmt->fetchAll();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if($count > 0) {
+        if($row) {
             $response = ['success' => false, 'msg' => "email already existed for $user_type account"];
             http_response_code(400);
-            echo json_encode($response);
         }
-
-        $q = "INSERT INTO users (email, password, type) VALUES (?,?,?)";
-        $db->prepare($q)->execute([$email, $password_enc, $user_type]);
-
-        $response['msg'] = 'registration successfull.';
+        else {
+            $q = "INSERT INTO users (email, password, type) VALUES (?,?,?)";
+            $db->prepare($q)->execute([$email, $password_enc, $user_type]);
+            $response['msg'] = 'registration successfull.';
+        }
 
         echo json_encode($response);
     }
@@ -42,18 +43,26 @@
         $email = $_POST['email'];
         $password_enc = md5($_POST['password']);
 
-        $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND password = ?");
+        $stmt = $db->prepare("SELECT id,email,type FROM users WHERE email = ? AND password = ?");
         $stmt->execute([$email, $password_enc]);
-        $rows = $stmt->fetch(PDO::ARRAY_ASSOC);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if(count($rows) > 0) {
+        if($row) {
             $response['msg'] = "logged in successfully";
+            $_SESSION['user'] = $row;
         }
         else {
             $response = ['success' => false, 'msg' => 'incorrect email and/or password'];
             http_response_code(400);
         }
 
+        echo json_encode($response);
+    }
+
+    if($op == 'LOGOUT') {
+        session_destroy();
+        $response['msg'] = "logged out successfully";
+        header('Location: available-cars-to-rent.php');
         echo json_encode($response);
     }
 
@@ -77,6 +86,27 @@
             $response['msg'] = 'car added successfully';
         }
 
+        echo json_encode($response);
+    }
+
+    if($op == 'RENT_CAR') {
+
+        $car_id = $_POST['car_id'];
+        $start_date = $_POST['start_date'];
+        $num_of_days = $_POST['num_of_days'];
+
+        if($_SESSION['user']['type'] == 'AGENCY') {
+            $response = ['success' => false, 'msg' => 'Agency user can\'t rent car'];
+            http_response_code(400);
+        }
+        else {
+            $user_id = $_SESSION['user']['id'];
+
+            $q = "INSERT INTO bookings (user_id, car_id, start_date, num_of_days) VALUES (?,?,?,?)";
+            $db->prepare($q)->execute([$user_id, $car_id, $start_date, $num_of_days]);
+            $response['msg'] = 'car rented successfully';
+        }
+        
         echo json_encode($response);
     }
 

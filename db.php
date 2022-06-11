@@ -1,12 +1,12 @@
 <?php
 
-    $DB_HOST = 'localhost';
-    $DB_USER = 'root';
-    $DB_PASS = '07860';
-    $DB_NAME = 'xlink';
+    $DB_HOST = 'remotemysql.com';
+    $DB_NAME = 'N8rkDpIJP8';
+    $DB_USER = 'N8rkDpIJP8';
+    $DB_PASS = 'b7l2EvQOB5';
 
     try {
-        $db = new PDO("mysql:host=$DB_HOST;DB_NAME=$DbName", $DB_USER, $DB_PASS);
+        $db = new PDO("mysql:host=$DB_HOST;dbname=$DB_NAME", $DB_USER, $DB_PASS);
     }
     catch(PDOException $e){
         die ('DataBase Connection failed: ' . $e->getMessage());
