@@ -19,19 +19,19 @@
         $email = $_POST['email'];
         $password_enc = md5($_POST['password']);
 
-        $user_type = ($op == 'CUSTOMER_REGISTRATION') ? 'CUSTOMER' : 'AGENCY';
+        $input_user_type = ($op == 'CUSTOMER_REGISTRATION') ? 'CUSTOMER' : 'AGENCY';
 
-        $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND type = ?");
-        $stmt->execute([$email, $user_type]);      
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);      
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if($row) {
-            $response = ['success' => false, 'msg' => "email already existed for $user_type account"];
+        if($user) {
+            $response = ['success' => false, 'msg' => "email already existed for ".$user['type']." account"];
             http_response_code(400);
         }
         else {
             $q = "INSERT INTO users (email, password, type) VALUES (?,?,?)";
-            $db->prepare($q)->execute([$email, $password_enc, $user_type]);
+            $db->prepare($q)->execute([$email, $password_enc, $input_user_type]);
             $response['msg'] = 'registration successfull.';
         }
 
@@ -67,24 +67,36 @@
     }
 
     if($op == 'ADD_NEW_CAR') {
+        $car_id = $_POST['car_id'];
         $vehicle_model = $_POST['vehicle_model'];
         $vehicle_number = $_POST['vehicle_number'];
         $seating_capacity = $_POST['seating_capacity'];
         $rent_per_day = $_POST['rent_per_day'];
 
-        $stmt = $db->prepare("SELECT COUNT(*) FROM cars WHERE number = ?");
-        $stmt->execute([$vehicle_number]);  
-        $row = $stmt->fetch();
+        $agency_user_id = $_SESSION['user']['id'];
 
-        if(count($row) > 0) {
-            $response = ['success' => false, 'msg' => 'vehicle number already existed'];
-            http_response_code(400);
+        if($car_id != 0) {
+            $stmt = $db->prepare("UPDATE cars SET model = ?, number = ?, seating_capacity = ?, rent_per_day = ? WHERE id = ? AND agency_user_id = ?");
+            $stmt->execute([$vehicle_model, $vehicle_number, $seating_capacity, $rent_per_day, $car_id, $agency_user_id]);
+            $response['msg'] = 'car updated successfully';
         }
         else {
-            $q = "INSERT INTO cars (model, number, seating_capacity, rent_per_day) VALUES (?,?,?,?)";
-            $db->prepare($q)->execute([$vehicle_model, $vehicle_number, $seating_capacity, $rent_per_day]);
-            $response['msg'] = 'car added successfully';
+            $stmt = $db->prepare("SELECT * FROM cars WHERE number = ?");
+            $stmt->execute([$vehicle_number]);
+            $car = $stmt->fetch();
+
+            if($car) {
+                $response = ['success' => false, 'msg' => 'vehicle number already existed'];
+                http_response_code(400);
+            }
+            else {
+                $q = "INSERT INTO cars (model, number, seating_capacity, rent_per_day, agency_user_id) VALUES (?,?,?,?,?)";
+                $db->prepare($q)->execute([$vehicle_model, $vehicle_number, $seating_capacity, $rent_per_day, $agency_user_id]);
+                $response['msg'] = 'car added successfully';
+            }
         }
+
+        
 
         echo json_encode($response);
     }

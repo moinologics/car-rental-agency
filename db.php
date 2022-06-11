@@ -1,9 +1,9 @@
 <?php
 
-    $DB_HOST = 'remotemysql.com';
-    $DB_NAME = 'N8rkDpIJP8';
-    $DB_USER = 'N8rkDpIJP8';
-    $DB_PASS = 'b7l2EvQOB5';
+    $DB_HOST = 'sql301.epizy.com';
+    $DB_NAME = 'epiz_31928394_db';
+    $DB_USER = 'epiz_31928394';
+    $DB_PASS = '95UZ5xEMi8c';
 
     try {
         $db = new PDO("mysql:host=$DB_HOST;dbname=$DB_NAME", $DB_USER, $DB_PASS);
